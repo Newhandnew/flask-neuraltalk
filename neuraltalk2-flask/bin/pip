@@ -1,4 +1,4 @@
-#!/home/new/src/neuraltalk2-flask/bin/python3
+#!/home/new/src/flask-neuraltalk2/neuraltalk2-flask/bin/python3
 
 # -*- coding: utf-8 -*-
 import re
