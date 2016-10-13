@@ -80,13 +80,14 @@ button.onclick = function() {
       base64img: dataURL
     },
     success: function(resp){
-      var pending_hash = resp.sha256sum;
+      var pending_hash = resp.uuid;     // get relate uuid
+      console.log(pending_hash);
       var status_elem = document.getElementById("caption");
       status_elem.style.color='orange';
       status_elem.innerText = "waiting for the captioning of the image...";
       var fDone = 0;
       var numCheck = 0;
-      var checkLimit = 12;
+      var checkLimit = 5;
       var checkTimer = setInterval(function(){
         var r = new XMLHttpRequest();
         r.open("GET", "/caption/"+pending_hash);
@@ -121,7 +122,7 @@ button.onclick = function() {
           r.send();
           numCheck +=1;
         }
-      },2000);
+      },1000);
     }
   })
 };
