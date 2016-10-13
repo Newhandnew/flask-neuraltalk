@@ -92,7 +92,7 @@ button.onclick = function() {
         var r = new XMLHttpRequest();
         r.open("GET", "/caption/"+pending_hash);
         r.onreadystatechange = function () {
-          if (r.readyState != 4){
+          if (r.status == 404){
             status_elem.style.color='red';
             status_elem.innerText="waiting....";
           }
