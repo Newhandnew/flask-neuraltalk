@@ -8,14 +8,17 @@ import base64
 import re
 from time import sleep
 from random import randint
+import threading
 # from flask import render_template, request, redirect, url_for, send_from_directory
 # from werkzeug import secure_filename
 
 
 # set the project root directory as the static folder, you can set others.
 app = Flask(__name__, static_url_path='')
-action_queue = queue.Queue(10)
+
+action_queue = queue.Queue(maxsize = 10)
 caption_result = {}
+f_in_process = False
 
 
 @app.route('/')
@@ -40,24 +43,36 @@ def camera_caption():
 	print("get picture successfully!")
 	# print('image:', base64img)
 	image_uuid = str(uuid.uuid1())
-	add_queue(image_uuid, image)
+	success = add_queue(image_uuid, image)
 	# response
-	resp_data = {'uuid':image_uuid}
-	resp = jsonify(resp_data)
-	resp.status_code = 200
-	return resp
+	if success:
+		resp_data = {'uuid':image_uuid}
+		resp = jsonify(resp_data)
+		resp.status_code = 200
+		return resp
+	else:
+		abort(404)
 
 def add_queue(img_uuid, img_data):
 	if action_queue.full():
 		print("Can't add to queue, queue is full!!!")
+		return False
 	else:
 		action_queue.put({'uuid':img_uuid, 'image':img_data})
-	while(action_queue.empty() == False):
-		action = action_queue.get()
-		uuid = action['uuid']
-		image = action['image']
-		result = image_caption(image)
-		caption_result[uuid] = result		# push to result dictionary
+		return True
+
+def process_queue():
+	while 1:
+		global f_in_process
+		sleep(0.5)
+		if((not action_queue.empty()) and (not f_in_process)):
+			f_in_process = True
+			action = action_queue.get()
+			uuid = action['uuid']
+			image = action['image']
+			result = image_caption(image)
+			caption_result[uuid] = result		# push to result dictionary
+			f_in_process = False
 
 
 def image_caption(image):
@@ -81,7 +96,14 @@ def caption(pending_id):
 
 if __name__ == "__main__":
     # print("flask version:", Flask.__version__)
-    app.run(debug=True)
+	try:
+		queue_thread = threading.Thread(target = process_queue)
+		queue_thread.daemon = True
+		queue_thread.start()
+
+		app.run(debug=True)
+	except KeyboardInterrupt:
+		print('Goodbye!')
     # -- CORS test
     # CORS(app)
     # app.config['CORS_HEADERS'] = 'Content-Type'
