@@ -82,47 +82,47 @@ button.onclick = function() {
     success: function(resp){
       var pending_hash = resp.uuid;     // get relate uuid
       console.log(pending_hash);
-      var status_elem = document.getElementById("caption");
-      status_elem.style.color='orange';
-      status_elem.innerText = "waiting for the captioning of the image...";
       var fDone = 0;
       var numCheck = 0;
       var checkLimit = 5;
-      var checkTimer = setInterval(function(){
-        var r = new XMLHttpRequest();
-        r.open("GET", "/caption/"+pending_hash);
-        r.onreadystatechange = function () {
-          if (r.status == 404){
-            status_elem.style.color='red';
-            status_elem.innerText="waiting....";
-          }
-          else{
-            status_elem.style.color='blue';
-            var jsonResponse = JSON.parse(r.responseText);
-            if (!jsonResponse.caption) {
-              if (numCheck > checkLimit) {
-                status_elem.style.color='red';
-                status_elem.innerText = 'Time out!';
-                fDone = 1;
-              }
-              else {
-                jsonResponse.caption = 'waiting....';
-              }
+      (function getResult() {
+        $.ajax({
+          url: "/caption/"+pending_hash,
+          success: function(resp) {
+            var result = resp.caption;
+            console.log(result);
+            $("#caption").css('color', 'blue');
+            $("#caption").text(result);
+            fDone = 1;
+          },
+          error: function(jqXHR, textStatus, errorThrown) { 
+            if(jqXHR.status == 404 || errorThrown == 'Not Found') 
+            { 
+              $("#caption").css('color', 'orange');
+              $("#caption").text('waiting....'); 
+              numCheck += 1;
             }
-            else {
-              status_elem.innerText = jsonResponse.caption;
-              fDone = 1;
+          },
+          complete: function() {
+            // Schedule the next request when the current one's complete
+            if (fDone){}
+            else if (numCheck < checkLimit) {
+              setTimeout(getResult, 2000);
+            }
+            else if (numCheck >= checkLimit) {
+              $("#caption").css('color', 'red');
+              $("#caption").text('too many pictures'); 
             }
           }
-        };
-        if (fDone) {
-          return;
-        }
-        else {
-          r.send();
-          numCheck +=1;
-        }
-      },1000);
+        });
+      })();
+    },
+    error: function(jqXHR, textStatus, errorThrown) { 
+      if(jqXHR.status == 404 || errorThrown == 'Not Found') 
+      { 
+        $("#caption").css('color', 'red');
+        $("#caption").text('server is busy!'); 
+      }
     }
   })
 };

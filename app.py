@@ -88,6 +88,7 @@ def image_caption(image):
 def caption(pending_id):
 	if pending_id in caption_result:
 		data = {'caption':caption_result[pending_id]}
+		del caption_result[pending_id]
 		resp = jsonify(data)
 		return resp
 	else:
